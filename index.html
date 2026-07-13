@@ -91,12 +91,12 @@ input:focus, select:focus { border-color: var(--highlight); }
       <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:12px;cursor:pointer">
         <input type="checkbox" id="no-summary-check"> 只转文字，不总结
       </label>
-      <div class="row" id="playlist-options" style="display:none;margin-bottom:12px">
-        <input type="number" id="start-ep" placeholder="起始集" min="1" value="1">
-        <input type="number" id="end-ep" placeholder="结束集" min="1">
+      <div class="row" style="margin-bottom:12px">
+        <button class="tab" style="background:var(--accent);flex:0 0 auto;padding:10px 16px" id="playlist-btn" onclick="togglePlaylist()">📚 合集</button>
+        <input type="text" id="start-ep" placeholder="起始集" value="1" style="display:none;margin-bottom:0" oninput="this.value=this.value.replace(/\D/g,'')">
+        <input type="text" id="end-ep" placeholder="结束集" value="1" style="display:none;margin-bottom:0" oninput="this.value=this.value.replace(/\D/g,'')">
       </div>
       <button class="btn btn-primary" onclick="startJob()">开始处理</button>
-      <button class="btn" style="width:100%;margin-top:8px;background:var(--accent);color:var(--text);padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px" onclick="togglePlaylist()">📚 合集模式</button>
     </div>
 
     <div id="tab-local" class="tab-content">
@@ -163,8 +163,13 @@ function switchTab(name) {
 }
 
 function togglePlaylist() {
-  const el = document.getElementById('playlist-options');
-  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  const se = document.getElementById('start-ep');
+  const ee = document.getElementById('end-ep');
+  const btn = document.getElementById('playlist-btn');
+  const show = se.style.display === 'none';
+  se.style.display = show ? 'block' : 'none';
+  ee.style.display = show ? 'block' : 'none';
+  btn.classList.toggle('active', show);
 }
 
 async function startJob() {
