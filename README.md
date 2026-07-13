@@ -9,9 +9,12 @@ B站视频 → 下载音频 → 语音转文字 → DeepSeek 总结
   yt-dlp    faster-whisper    DeepSeek API
 ```
 
-- 支持单个视频 / 合集 / 指定分 P
-- 本地 Whisper 转录，无需上传云端
-- DeepSeek API 总结，国内直连
+- 🎬 支持单个视频 / 合集 / 指定分 P / 本地音频视频
+- 🖥️ Web UI 界面，浏览器一键操作
+- 🚀 自动检测 GPU 加速转录（RTX 系列）
+- 🏠 本地 Whisper 转录，无需上传云端
+- 📝 5 种总结预设（笔记 / 结构化 / 脑图 / 时间线 / 行动指南）
+- 📂 输出分类：audio / transcript / summary
 
 ## 快速开始
 
@@ -19,16 +22,38 @@ B站视频 → 下载音频 → 语音转文字 → DeepSeek 总结
 # 1. 安装依赖
 pip install -r requirements.txt
 
-# 2. 设置 DeepSeek API Key
-set DEEPSEEK_API_KEY=sk-你的key
+# 2. 编辑 .env 设置 DeepSeek API Key
+# DEEPSEEK_API_KEY=sk-xxx
 
-# 3. 运行
-python main.py BV1xxx
+# 3. 环境检查
+python env_check.py
+
+# 4. 运行（二选一）
+python main.py BV号         # 命令行
+python web_server.py         # Web UI → http://localhost:8765
 ```
 
 首次运行会自动下载 Whisper 模型（约 3GB），后续缓存复用。
 
-## 用法
+## Web UI
+
+```powershell
+python web_server.py
+# 或
+uvicorn web_server:app --host 0.0.0.0 --port 8765
+```
+
+浏览器打开 `http://localhost:8765`，支持：
+
+| 输入方式 | 说明 |
+|----------|------|
+| 🔗 B站链接 | BV 号或完整 URL |
+| 📁 本地上传 | mp4 / m4a / mp3 / wav |
+| 📂 已有音频 | 处理 output/audio/ 已下载文件 |
+
+进度实时显示，结果可直接下载。
+
+## CLI 用法
 
 ```powershell
 # 单个视频
@@ -43,20 +68,14 @@ python main.py BV1xxx --playlist --start 1 --end 5
 # 只转录，不总结
 python main.py BV1xxx --no-summary
 
-# 跳过下载（转录已有 m4a 文件）
-python main.py BV1xxx --no-download
-
-# 用更快的模型
-python main.py BV1xxx --model tiny
-
-# 自定义总结提示词
-python main.py BV1xxx --prompt "用英文总结并提取关键时间戳"
-
 # 选择总结预设
 python main.py BV1xxx --preset notes    # 学习笔记
 python main.py BV1xxx --preset brief    # 简短摘要
 python main.py BV1xxx --preset timeline # 时间线梳理
 python main.py BV1xxx --preset action   # 行动指南
+
+# 用更快的模型
+python main.py BV1xxx --model small
 ```
 
 ## 参数说明
