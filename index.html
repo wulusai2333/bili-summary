@@ -91,7 +91,12 @@ input:focus, select:focus { border-color: var(--highlight); }
       <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:12px;cursor:pointer">
         <input type="checkbox" id="no-summary-check"> 只转文字，不总结
       </label>
+      <div class="row" id="playlist-options" style="display:none;margin-bottom:12px">
+        <input type="number" id="start-ep" placeholder="起始集" min="1" value="1">
+        <input type="number" id="end-ep" placeholder="结束集" min="1">
+      </div>
       <button class="btn btn-primary" onclick="startJob()">开始处理</button>
+      <button class="btn" style="width:100%;margin-top:8px;background:var(--accent);color:var(--text);padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px" onclick="togglePlaylist()">📚 合集模式</button>
     </div>
 
     <div id="tab-local" class="tab-content">
@@ -157,18 +162,27 @@ function switchTab(name) {
   document.getElementById(`tab-${name}`).classList.add('active');
 }
 
+function togglePlaylist() {
+  const el = document.getElementById('playlist-options');
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
 async function startJob() {
   const url = document.getElementById('url-input').value.trim();
   if (!url) return alert('请输入链接');
   const preset = document.getElementById('preset-select').value;
   const model = document.getElementById('model-select').value;
   const noSummary = document.getElementById('no-summary-check').checked;
+  const startEp = parseInt(document.getElementById('start-ep').value) || 0;
+  const endEp = parseInt(document.getElementById('end-ep').value) || 0;
 
   const fd = new FormData();
   fd.append('url', url);
   fd.append('preset', preset);
   fd.append('model', model);
   fd.append('no_summary', noSummary);
+  fd.append('start_ep', startEp);
+  fd.append('end_ep', endEp);
 
   await doStart(fd);
 }

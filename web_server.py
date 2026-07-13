@@ -77,6 +77,8 @@ def run_pipeline(
     preset: str,
     model: str,
     no_summary: bool,
+    start_ep: int = 0,
+    end_ep: int = 0,
 ):
     _result_audio = []
     _result_txt = []
@@ -105,7 +107,14 @@ def run_pipeline(
         elif url:
             _log(job_id, f"下载音频: {url}")
             _jobs[job_id]["stage"] = "下载音频"
-            audio_files = download(url, str(AUDIO_DIR))
+            if start_ep and end_ep:
+                _log(job_id, f"合集 P{start_ep}-P{end_ep}")
+                audio_files = download_playlist(url, str(AUDIO_DIR), start=start_ep, end=end_ep)
+            elif start_ep:
+                _log(job_id, f"指定分 P{start_ep}")
+                audio_files = download_playlist(url, str(AUDIO_DIR), start=start_ep, end=start_ep)
+            else:
+                audio_files = download(url, str(AUDIO_DIR))
             for a in audio_files:
                 _result_audio.append({"name": a.name, "size": a.stat().st_size})
             _log(job_id, f"下载完成 ({len(audio_files)} 个)")
@@ -170,6 +179,8 @@ def api_run(
     preset: str = Form("notes"),
     model: str = Form("large-v3"),
     no_summary: bool = Form(False),
+    start_ep: int = Form(0),
+    end_ep: int = Form(0),
     file: UploadFile | None = File(None),
 ):
     job_id = uuid.uuid4().hex[:12]
@@ -185,7 +196,7 @@ def api_run(
 
     t = threading.Thread(
         target=run_pipeline,
-        args=(job_id, url or None, str(fpath) if fpath else None, preset, model, no_summary),
+        args=(job_id, url or None, str(fpath) if fpath else None, preset, model, no_summary, start_ep, end_ep),
         daemon=True,
     )
     t.start()
