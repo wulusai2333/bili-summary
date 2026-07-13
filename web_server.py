@@ -78,6 +78,10 @@ def run_pipeline(
     model: str,
     no_summary: bool,
 ):
+    _result_audio = []
+    _result_txt = []
+    _result_md = []
+
     try:
         _jobs[job_id]["status"] = "running"
 
@@ -96,11 +100,14 @@ def run_pipeline(
                 audio_path = TEMP_DIR / f"{job_id}{ext}"
                 shutil.copy(file_path, audio_path)
             audio_files = [audio_path]
+            _result_audio.append({"name": audio_path.name, "size": audio_path.stat().st_size})
             _log(job_id, "音频准备完成")
-        el        if url:
+        elif url:
             _log(job_id, f"下载音频: {url}")
             _jobs[job_id]["stage"] = "下载音频"
             audio_files = download(url, str(AUDIO_DIR))
+            for a in audio_files:
+                _result_audio.append({"name": a.name, "size": a.stat().st_size})
             _log(job_id, f"下载完成 ({len(audio_files)} 个)")
         else:
             raise ValueError("请提供视频链接或上传文件")
@@ -113,7 +120,9 @@ def run_pipeline(
             _jobs[job_id]["progress"] = i
             _log(job_id, f"转录 ({i+1}/{len(audio_files)}): {Path(audio).name}")
             result = transcribe(str(audio), model, device="auto")
-            txt_files.append(Path(result["output_path"]))
+            p = Path(result["output_path"])
+            txt_files.append(p)
+            _result_txt.append({"name": p.name, "size": p.stat().st_size})
             _log(job_id, f"  -> {result['output_path']}")
 
         # 3. 总结
@@ -123,16 +132,20 @@ def run_pipeline(
                 _jobs[job_id]["progress"] = len(audio_files) + i
                 _log(job_id, f"总结 ({i+1}/{len(txt_files)}): {txt.name}")
                 summarize_file(str(txt), preset=preset)
+                md_name = txt.stem + "_summary.md"
+                md_path = SUMMARY_DIR / md_name
+                if md_path.exists():
+                    _result_md.append({"name": md_name, "size": md_path.stat().st_size})
 
         _jobs[job_id]["status"] = "done"
         _jobs[job_id]["stage"] = "完成"
         _log(job_id, "全部完成!")
 
-        # 收集结果
+        # 收集结果（仅本次任务文件）
         result_files = {
-            "audio": [{"name": f.name, "size": f.stat().st_size} for f in AUDIO_DIR.glob("*.m4a")],
-            "transcript": [{"name": f.name, "size": f.stat().st_size} for f in TRANSCRIPT_DIR.glob("*.txt")],
-            "summary": [{"name": f.name, "size": f.stat().st_size} for f in SUMMARY_DIR.glob("*.md")],
+            "audio": _result_audio,
+            "transcript": _result_txt,
+            "summary": _result_md,
         }
         _jobs[job_id]["results"] = result_files
     except Exception as e:
