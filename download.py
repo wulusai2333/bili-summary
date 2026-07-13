@@ -10,10 +10,23 @@ AUDIO_DIR = OUTPUT_DIR / "audio"
 OUTPUT_TEMPLATE = "%(title)s.%(ext)s"
 
 
+def _snapshot(out_dir: Path) -> set[str]:
+    return {f.name for f in out_dir.glob("*.m4a")}
+
+
+def _new_files(out_dir: Path, before: set[str]) -> list[Path]:
+    return sorted(
+        (f for f in out_dir.glob("*.m4a") if f.name not in before),
+        key=lambda f: f.stat().st_mtime,
+    )
+
+
 def download(url: str, output: str | None = None, proxy: str | None = None) -> list[Path]:
     """下载 B 站视频音频，支持合集/分 P。返回下载文件列表。"""
     out_dir = Path(output) if output else AUDIO_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    before = _snapshot(out_dir)
 
     cmd = [
         sys.executable, "-m", "yt_dlp",
@@ -35,8 +48,8 @@ def download(url: str, output: str | None = None, proxy: str | None = None) -> l
     if result.returncode != 0:
         raise RuntimeError(f"下载失败:\n{result.stderr}")
 
-    files = sorted(out_dir.glob("*.m4a"), key=lambda f: f.stat().st_mtime, reverse=True)
-    return files[:1] if files else []
+    new = _new_files(out_dir, before)
+    return new or sorted(out_dir.glob("*.m4a"), key=lambda f: f.stat().st_mtime, reverse=True)
 
 
 def download_playlist(
@@ -49,6 +62,8 @@ def download_playlist(
     """下载合集/播放列表，指定分 P 范围。"""
     out_dir = Path(output) if output else AUDIO_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    before = _snapshot(out_dir)
 
     playlist_items = f"{start}-{end}" if end else str(start)
 
@@ -72,7 +87,7 @@ def download_playlist(
     if result.returncode != 0:
         raise RuntimeError(f"下载失败:\n{result.stderr}")
 
-    return sorted(out_dir.glob("*.m4a"), key=lambda f: f.stat().st_mtime)
+    return _new_files(out_dir, before)
 
 
 if __name__ == "__main__":
