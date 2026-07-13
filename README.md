@@ -165,10 +165,10 @@ python summarize.py transcript.txt
 `av` 库 DLL 被旧进程占用或损坏。
 
 ```powershell
-# 关闭所有 Python 进程
-taskkill /F /IM python.exe
+# 关闭本项目的服务进程
+Get-NetTCPConnection -LocalPort 8765 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 
-# 清理并重装
+# 清理并重装 av
 pip uninstall av -y
 pip install av --no-cache-dir
 ```
