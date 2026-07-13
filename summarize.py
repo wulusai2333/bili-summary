@@ -1,6 +1,7 @@
 """DeepSeek 总结"""
 
 import os
+import tomllib
 from pathlib import Path
 
 from openai import OpenAI
@@ -8,6 +9,39 @@ from openai import OpenAI
 
 DEFAULT_MODEL = "deepseek-chat"
 OUTPUT_DIR = Path(__file__).parent / "output"
+PRESETS_FILE = Path(__file__).parent / "summary_presets.toml"
+DEFAULT_PRESET = "structured"
+
+
+def load_presets(path: Path | None = None) -> dict:
+    """加载总结预设。"""
+    p = path or PRESETS_FILE
+    if not p.exists():
+        return {}
+    data = tomllib.loads(p.read_text(encoding="utf-8"))
+    return data.get("presets", {})
+
+
+def build_prompt(preset: str | None = None, custom: str | None = None, has_timestamps: bool = False) -> str | None:
+    """构建总结提示词。优先自定义 > 预设 > 默认。"""
+    if custom:
+        return custom
+
+    if preset:
+        presets = load_presets()
+        entry = presets.get(preset)
+        if entry:
+            template = entry.get("prompt_template", "")
+            if has_timestamps:
+                template = template.replace("{{% if has_timestamps %}}", "").replace("{{% else %}}", "").replace("{{% endif %}}", "")
+            else:
+                import re
+                template = re.sub(r"{{% if has_timestamps %}}.*?{{% else %}}", "", template, flags=re.DOTALL)
+                template = template.replace("{{% endif %}}", "")
+            return template
+        print(f"[警告] 预设 '{preset}' 不存在，使用默认提示词")
+
+    return None
 
 
 def summarize(
@@ -16,6 +50,7 @@ def summarize(
     base_url: str = "https://api.deepseek.com",
     model: str = DEFAULT_MODEL,
     prompt: str | None = None,
+    preset: str | None = None,
 ) -> str:
     """调用 DeepSeek API 总结文本。"""
     key = api_key or os.getenv("DEEPSEEK_API_KEY")
@@ -24,13 +59,14 @@ def summarize(
 
     client = OpenAI(api_key=key, base_url=base_url)
 
-    system_prompt = prompt or (
+    system_prompt = build_prompt(preset=preset, custom=prompt) or (
         "你是一个专业的文本总结助手。请用中文对以下内容进行结构化总结，"
         "包括：1) 核心主题 2) 关键要点（以列表呈现）3) 总结概述。"
         "语言简洁清晰，不要遗漏重要信息。"
     )
 
-    print(f"[总结] 文本长度 {len(text)} 字，模型: {model}")
+    label = preset or "默认"
+    print(f"[总结] {len(text)} 字 | 预设: {label} | 模型: {model}")
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -49,13 +85,14 @@ def summarize_file(
     base_url: str = "https://api.deepseek.com",
     model: str = DEFAULT_MODEL,
     prompt: str | None = None,
+    preset: str | None = None,
     output_dir: str | Path | None = None,
 ) -> str:
     """从文件读取转录文本并总结，结果保存为 Markdown。"""
     path = Path(file_path)
     text = path.read_text(encoding="utf-8")
 
-    summary = summarize(text, api_key, base_url, model, prompt)
+    summary = summarize(text, api_key, base_url, model, prompt, preset)
 
     out_dir = Path(output_dir) if output_dir else path.parent
     md_path = out_dir / f"{path.stem}_summary.md"
@@ -74,8 +111,15 @@ if __name__ == "__main__":
     parser.add_argument("--base-url", default="https://api.deepseek.com")
     parser.add_argument("-m", "--model", default=DEFAULT_MODEL)
     parser.add_argument("--prompt", default=None, help="自定义提示词")
+    parser.add_argument("-p", "--preset", default=DEFAULT_PRESET, help="总结预设 (structured/notes/brief/timeline/action)")
     parser.add_argument("-o", "--output", default=None, help="输出目录")
+    parser.add_argument("--list-presets", action="store_true", help="列出所有预设")
     args = parser.parse_args()
 
-    result = summarize_file(args.file, args.api_key, args.base_url, args.model, args.prompt, args.output)
-    print(f"\n{result}")
+    if args.list_presets:
+        presets = load_presets()
+        for name, entry in presets.items():
+            print(f"  {name:16s} {entry.get('label', '')}")
+    else:
+        result = summarize_file(args.file, args.api_key, args.base_url, args.model, args.prompt, args.preset, args.output)
+        print(f"\n{result}")

@@ -65,6 +65,7 @@ def main():
     parser.add_argument("--base-url", default="https://api.deepseek.com")
     parser.add_argument("--llm-model", default="deepseek-chat", help="总结模型")
     parser.add_argument("--prompt", default=None, help="自定义总结提示词")
+    parser.add_argument("-p", "--preset", default="structured", help="总结预设 (structured/notes/brief/timeline/action)")
     parser.add_argument("--proxy", default=None, help="代理地址")
     parser.add_argument("--no-summary", action="store_true", help="跳过总结")
     parser.add_argument("--no-download", action="store_true", help="跳过下载(直接转录已有音频)")
@@ -122,7 +123,7 @@ def main():
             print(f"[跳过总结] {f}")
     else:
         for f in txt_files:
-            summarize_file(str(f), api_key, args.base_url, args.llm_model, args.prompt, out_dir)
+            summarize_file(str(f), api_key, args.base_url, args.llm_model, args.prompt, args.preset, out_dir)
 
     print(f"\n完成! 文件在: {out_dir.resolve()}")
 

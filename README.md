@@ -51,6 +51,12 @@ python main.py BV1xxx --model tiny
 
 # 自定义总结提示词
 python main.py BV1xxx --prompt "用英文总结并提取关键时间戳"
+
+# 选择总结预设
+python main.py BV1xxx --preset notes    # 学习笔记
+python main.py BV1xxx --preset brief    # 简短摘要
+python main.py BV1xxx --preset timeline # 时间线梳理
+python main.py BV1xxx --preset action   # 行动指南
 ```
 
 ## 参数说明
@@ -90,6 +96,18 @@ output/
   ├── 视频标题_transcript.json      # 带时间戳的转录
   └── 视频标题_summary.md           # DeepSeek 总结
 ```
+
+## 总结预设
+
+预设配置文件 `summary_presets.toml`。
+
+| 预设 | 说明 | 适用场景 |
+|------|------|----------|
+| `structured` | 结构化总结（默认）| 通用视频 |
+| `notes` | 学习笔记 | 教程/课程 |
+| `brief` | 简短摘要 | 快速浏览 |
+| `timeline` | 时间线梳理 | 讲座/访谈 |
+| `action` | 行动指南 | 实操教程 |
 
 ## 环境要求
 
