@@ -9,6 +9,7 @@ from openai import OpenAI
 
 DEFAULT_MODEL = "deepseek-chat"
 OUTPUT_DIR = Path(__file__).parent / "output"
+SUMMARY_DIR = OUTPUT_DIR / "summary"
 PRESETS_FILE = Path(__file__).parent / "summary_presets.toml"
 DEFAULT_PRESET = "structured"
 
@@ -94,7 +95,8 @@ def summarize_file(
 
     summary = summarize(text, api_key, base_url, model, prompt, preset)
 
-    out_dir = Path(output_dir) if output_dir else path.parent
+    out_dir = Path(output_dir) if output_dir else SUMMARY_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
     md_path = out_dir / f"{path.stem}_summary.md"
     md_path.write_text(summary, encoding="utf-8")
 

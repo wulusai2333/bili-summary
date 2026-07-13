@@ -84,12 +84,13 @@ def main():
 
     url = normalize_url(args.url)
     out_dir = Path(args.output) if args.output else Path("output")
+    audio_dir = out_dir / "audio"
 
     # --- 步骤 1: 下载音频 ---
     if args.no_download:
-        audio_files = sorted(out_dir.glob("*.m4a"))
+        audio_files = sorted(audio_dir.glob("*.m4a")) if audio_dir.exists() else []
         if not audio_files:
-            print("错误: 未找到已有音频文件，请先下载")
+            print(f"错误: 未找到已有音频文件 ({audio_dir})，请先下载")
             sys.exit(1)
         print(f"[跳过下载] 找到 {len(audio_files)} 个已有音频")
     else:
@@ -105,7 +106,8 @@ def main():
 
     # --- 步骤 2: 语音转文字 ---
     if args.no_transcribe:
-        txt_files = sorted(out_dir.glob("*.txt"))
+        transcript_dir = out_dir / "transcript"
+        txt_files = sorted(transcript_dir.glob("*.txt")) if transcript_dir.exists() else []
         print(f"[跳过转录] 找到 {len(txt_files)} 个已有文本")
     else:
         txt_files = []

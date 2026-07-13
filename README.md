@@ -91,10 +91,9 @@ python main.py BV1xxx --preset action   # 行动指南
 
 ```
 output/
-  ├── 视频标题.m4a                  # 下载的音频
-  ├── 视频标题.txt                  # 转录文本
-  ├── 视频标题_transcript.json      # 带时间戳的转录
-  └── 视频标题_summary.md           # DeepSeek 总结
+  ├── audio/         # 下载的音频 .m4a
+  ├── transcript/    # 转录文本 .txt + .json
+  └── summary/       # DeepSeek 总结 .md
 ```
 
 ## 总结预设

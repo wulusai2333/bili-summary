@@ -2,8 +2,3 @@ __pycache__/
 *.pyc
 output/
 .env
-*.m4a
-*.mp3
-*.txt
-*_transcript.json
-*_summary.md

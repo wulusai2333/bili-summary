@@ -73,7 +73,7 @@ python {baseDir}/main.py "URL" [参数...]
 
 Read 输出的 `_summary.md` 文件，展示总结。
 
-同时告知用户输出目录位置：`{baseDir}/output/`
+同时告知用户输出目录位置：`{baseDir}/output/audio/`, `transcript/`, `summary/`。
 
 ## 批量处理
 
@@ -81,12 +81,12 @@ Read 输出的 `_summary.md` 文件，展示总结。
 
 ```bash
 # 先批量下载所有音频（快速）
-python -m yt_dlp -x --audio-format m4a -o "{baseDir}/output/%(title)s.%(ext)s" "URL"
+python -m yt_dlp -x --audio-format m4a -o "{baseDir}/output/audio/%(title)s.%(ext)s" "URL"
 
 # 然后逐集转录+总结
-for f in {baseDir}/output/*.m4a; do
+for f in {baseDir}/output/audio/*.m4a; do
     python {baseDir}/transcribe.py "$f"
-    python {baseDir}/summarize.py "${f%.m4a}.txt" --preset notes
+    python {baseDir}/summarize.py "{baseDir}/output/transcript/$(basename ${f%.m4a}).txt" --preset notes
 done
 ```
 

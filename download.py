@@ -6,12 +6,13 @@ from pathlib import Path
 
 
 OUTPUT_DIR = Path(__file__).parent / "output"
+AUDIO_DIR = OUTPUT_DIR / "audio"
 OUTPUT_TEMPLATE = "%(title)s.%(ext)s"
 
 
 def download(url: str, output: str | None = None, proxy: str | None = None) -> list[Path]:
     """下载 B 站视频音频，支持合集/分 P。返回下载文件列表。"""
-    out_dir = Path(output) if output else OUTPUT_DIR
+    out_dir = Path(output) if output else AUDIO_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -46,7 +47,7 @@ def download_playlist(
     proxy: str | None = None,
 ) -> list[Path]:
     """下载合集/播放列表，指定分 P 范围。"""
-    out_dir = Path(output) if output else OUTPUT_DIR
+    out_dir = Path(output) if output else AUDIO_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
 
     playlist_items = f"{start}-{end}" if end else str(start)

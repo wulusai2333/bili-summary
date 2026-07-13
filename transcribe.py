@@ -20,6 +20,7 @@ from faster_whisper import WhisperModel
 
 MODEL_SIZE = "large-v3"
 OUTPUT_DIR = Path(__file__).parent / "output"
+TRANSCRIPT_DIR = OUTPUT_DIR / "transcript"
 
 
 def transcribe(
@@ -59,7 +60,8 @@ def transcribe(
 
     text = " ".join(text_parts)
 
-    out_dir = Path(output_dir) if output_dir else Path(audio_path).parent
+    out_dir = Path(output_dir) if output_dir else TRANSCRIPT_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
     stem = Path(audio_path).stem
 
     txt_path = out_dir / f"{stem}.txt"
