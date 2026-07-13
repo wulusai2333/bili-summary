@@ -18,7 +18,19 @@ def transcribe(
     output_dir: str | Path | None = None,
 ) -> dict:
     """转录音频文件，返回 {text, segments, output_path}。"""
-    model = WhisperModel(model_size, device=device, compute_type="int8")
+    if device == "auto":
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.zeros(1).cuda()  # 验证 CUDA 实际可用
+                model = WhisperModel(model_size, device="cuda", compute_type="int8")
+            else:
+                model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        except Exception:
+            model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    else:
+        compute = "int8" if device == "cuda" else "auto"
+        model = WhisperModel(model_size, device=device, compute_type=compute)
     audio = str(audio_path)
 
     print(f"[转录] {Path(audio_path).name} (模型: {model_size})")
