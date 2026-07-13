@@ -159,6 +159,11 @@ def index():
     return HTMLResponse((PROJECT_DIR / "index.html").read_text(encoding="utf-8"))
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(PROJECT_DIR / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.post("/api/run")
 def api_run(
     url: str = Form(""),
