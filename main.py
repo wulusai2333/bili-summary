@@ -15,6 +15,24 @@ import os
 import sys
 from pathlib import Path
 
+
+def _load_env():
+    """加载项目根目录的 .env 文件。"""
+    env_path = Path(__file__).parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key, val = key.strip(), val.strip()
+        if key and key not in os.environ:
+            os.environ[key] = val
+
+
+_load_env()
+
 from download import download, download_playlist
 from transcribe import transcribe
 from summarize import summarize_file
