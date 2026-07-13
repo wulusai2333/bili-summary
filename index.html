@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bili-summary</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --card: #16213e;
+  --accent: #0f3460;
+  --highlight: #e94560;
+  --text: #eee;
+  --muted: #999;
+  --green: #00c853;
+  --orange: #ff9100;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.header { background: var(--card); padding: 16px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--accent); }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header span { color: var(--muted); font-size: 13px; }
+.main { max-width: 960px; margin: 0 auto; padding: 24px; }
+.card { background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--accent); }
+.card h2 { font-size: 16px; margin-bottom: 16px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--accent); border-radius: 8px; padding: 4px; }
+.tab { flex: 1; padding: 10px; text-align: center; border: none; background: transparent; color: var(--text); border-radius: 6px; cursor: pointer; font-size: 14px; transition: .2s; }
+.tab.active { background: var(--highlight); font-weight: 600; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+input[type="text"], input[type="file"], select { width: 100%; padding: 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; margin-bottom: 12px; outline: none; }
+input:focus, select:focus { border-color: var(--highlight); }
+.row { display: flex; gap: 12px; }
+.row > * { flex: 1; }
+.btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: .2s; }
+.btn-primary { background: var(--highlight); color: #fff; width: 100%; }
+.btn-primary:hover { opacity: .9; }
+.progress { margin-top: 16px; display: none; }
+.progress.active { display: block; }
+.progress-bar { height: 6px; background: var(--accent); border-radius: 3px; margin: 12px 0; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width .3s; width: 0; }
+.progress-info { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.log-box { background: #000; border-radius: 8px; padding: 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; max-height: 200px; overflow-y: auto; line-height: 1.6; color: var(--green); }
+.log-box .error { color: var(--highlight); }
+.results { display: none; margin-top: 16px; }
+.results.active { display: block; }
+.file-group { margin-bottom: 12px; }
+.file-group h3 { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.file-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border-radius: 6px; margin-bottom: 4px; font-size: 13px; }
+.file-item span:first-child { flex: 1; word-break: break-all; }
+.file-item span:last-child { color: var(--muted); white-space: nowrap; }
+.file-item a { color: var(--highlight); text-decoration: none; font-weight: 600; }
+.status { font-size: 13px; }
+.status.done { color: var(--green); }
+.status.running { color: var(--orange); }
+.status.failed { color: var(--highlight); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📼 bili-summary</h1>
+  <span>B站视频 → 转文字 → AI 总结</span>
+</div>
+
+<div class="main">
+  <div class="card">
+    <h2>选择输入方式</h2>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bili')">🔗 B站链接</button>
+      <button class="tab" onclick="switchTab('local')">📁 本地上传</button>
+      <button class="tab" onclick="switchTab('existing')">📂 已有音频</button>
+    </div>
+
+    <div id="tab-bili" class="tab-content active">
+      <input type="text" id="url-input" placeholder="BV号 或 B站链接，合集需带 --playlist --start 1 --end 3">
+      <div class="row">
+        <select id="preset-select">
+          <option value="notes">学习笔记</option>
+          <option value="structured">结构化总结</option>
+          <option value="brief">简短摘要</option>
+          <option value="timeline">时间线梳理</option>
+          <option value="action">行动指南</option>
+        </select>
+        <select id="model-select">
+          <option value="large-v3">large-v3 (最准)</option>
+          <option value="medium">medium (均衡)</option>
+          <option value="small">small (最快)</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:12px;cursor:pointer">
+        <input type="checkbox" id="no-summary-check"> 只转文字，不总结
+      </label>
+      <button class="btn btn-primary" onclick="startJob()">开始处理</button>
+    </div>
+
+    <div id="tab-local" class="tab-content">
+      <input type="file" id="file-input" accept=".mp4,.m4a,.mp3,.wav,.webm">
+      <div class="row">
+        <select id="preset-select2">
+          <option value="notes">学习笔记</option>
+          <option value="structured">结构化总结</option>
+          <option value="brief">简短摘要</option>
+          <option value="timeline">时间线梳理</option>
+          <option value="action">行动指南</option>
+        </select>
+        <select id="model-select2">
+          <option value="large-v3">large-v3</option>
+          <option value="medium">medium</option>
+          <option value="small">small</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="startJobLocal()">上传并处理</button>
+    </div>
+
+    <div id="tab-existing" class="tab-content">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:12px">处理 output/audio/ 中已有的音频文件（跳过下载）</p>
+      <div class="row">
+        <select id="preset-select3">
+          <option value="notes">学习笔记</option>
+          <option value="structured">结构化总结</option>
+          <option value="brief">简短摘要</option>
+          <option value="timeline">时间线梳理</option>
+          <option value="action">行动指南</option>
+        </select>
+        <select id="model-select3">
+          <option value="large-v3">large-v3</option>
+          <option value="medium">medium</option>
+          <option value="small">small</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="processExisting()">处理已有音频</button>
+    </div>
+  </div>
+
+  <div id="progress-box" class="card progress">
+    <div class="progress-info">
+      <span class="status running" id="status-text">处理中</span>
+      <span id="stage-text">初始化...</span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <div id="results-box" class="card results"></div>
+</div>
+
+<script>
+const API = '';
+let jobId = null;
+let pollTimer = null;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+async function startJob() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return alert('请输入链接');
+  const preset = document.getElementById('preset-select').value;
+  const model = document.getElementById('model-select').value;
+  const noSummary = document.getElementById('no-summary-check').checked;
+
+  const fd = new FormData();
+  fd.append('url', url);
+  fd.append('preset', preset);
+  fd.append('model', model);
+  fd.append('no_summary', noSummary);
+
+  await doStart(fd);
+}
+
+async function startJobLocal() {
+  const file = document.getElementById('file-input').files[0];
+  if (!file) return alert('请选择文件');
+  const preset = document.getElementById('preset-select2').value;
+  const model = document.getElementById('model-select2').value;
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('preset', preset);
+  fd.append('model', model);
+
+  await doStart(fd);
+}
+
+async function processExisting() {
+  const preset = document.getElementById('preset-select3').value;
+  const model = document.getElementById('model-select3').value;
+
+  const fd = new FormData();
+  fd.append('url', '--no-download');
+  fd.append('preset', preset);
+  fd.append('model', model);
+
+  await doStart(fd);
+}
+
+async function doStart(fd) {
+  const res = await fetch(API + '/api/run', { method: 'POST', body: fd });
+  const data = await res.json();
+  jobId = data.job_id;
+
+  document.getElementById('progress-box').classList.add('active');
+  document.getElementById('results-box').classList.remove('active');
+  document.getElementById('log-box').innerHTML = '';
+  document.getElementById('progress-fill').style.width = '0%';
+
+  pollProgress();
+}
+
+function pollProgress() {
+  const es = new EventSource(API + '/api/progress/' + jobId);
+  es.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+
+    document.getElementById('stage-text').textContent = d.stage;
+    document.getElementById('status-text').textContent = d.status === 'running' ? '处理中' : d.status === 'done' ? '完成' : '失败';
+    document.getElementById('status-text').className = 'status ' + d.status;
+    if (d.total > 0) {
+      document.getElementById('progress-fill').style.width = (d.progress / d.total * 100) + '%';
+    }
+
+    d.logs.forEach(l => {
+      const div = document.createElement('div');
+      div.textContent = l;
+      if (l.includes('错误')) div.className = 'error';
+      document.getElementById('log-box').appendChild(div);
+    });
+    document.getElementById('log-box').scrollTop = document.getElementById('log-box').scrollHeight;
+
+    if (d.status === 'done') {
+      es.close();
+      showResults(d.results);
+    }
+    if (d.status === 'failed') {
+      es.close();
+    }
+  };
+}
+
+function showResults(results) {
+  const box = document.getElementById('results-box');
+  box.classList.add('active');
+  let html = '<h2>📋 结果文件</h2>';
+
+  const groups = [
+    { key: 'summary', label: 'AI 总结', icon: '📝' },
+    { key: 'transcript', label: '转录文本', icon: '📄' },
+    { key: 'audio', label: '音频文件', icon: '🎵' },
+  ];
+
+  groups.forEach(g => {
+    const files = results[g.key];
+    if (!files || !files.length) return;
+    html += `<div class="file-group"><h3>${g.icon} ${g.label}</h3>`;
+    files.forEach(f => {
+      const size = (f.size / 1024).toFixed(1) + ' KB';
+      html += `<div class="file-item">
+        <span>${f.name}</span>
+        <span>${size}</span>
+        <a href="${API}/api/download/${g.key}/${encodeURIComponent(f.name)}" download>下载</a>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  box.innerHTML = html;
+}
+</script>
+</body>
+</html>

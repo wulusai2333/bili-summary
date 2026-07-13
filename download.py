@@ -21,12 +21,23 @@ def _new_files(out_dir: Path, before: set[str]) -> list[Path]:
     )
 
 
+def _clean_url(url: str) -> str:
+    """清理 B站 URL，去掉追踪参数，保留 BV 号部分。"""
+    if "bilibili.com/video/" in url:
+        import re
+        m = re.search(r"(BV[a-zA-Z0-9]+)", url)
+        if m:
+            return f"https://www.bilibili.com/video/{m.group(1)}/"
+    return url
+
+
 def download(url: str, output: str | None = None, proxy: str | None = None) -> list[Path]:
     """下载 B 站视频音频，支持合集/分 P。返回下载文件列表。"""
     out_dir = Path(output) if output else AUDIO_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
 
     before = _snapshot(out_dir)
+    url = _clean_url(url)
 
     cmd = [
         sys.executable, "-m", "yt_dlp",
@@ -34,7 +45,8 @@ def download(url: str, output: str | None = None, proxy: str | None = None) -> l
         "--audio-format", "m4a",
         "--audio-quality", "0",
         "-o", str(out_dir / OUTPUT_TEMPLATE),
-        "--no-playlist",  # 默认只下载单个视频；合集用 --playlist
+        "--no-playlist",
+        "--break-on-existing",
     ]
 
     if proxy:
@@ -49,7 +61,9 @@ def download(url: str, output: str | None = None, proxy: str | None = None) -> l
         raise RuntimeError(f"下载失败:\n{result.stderr}")
 
     new = _new_files(out_dir, before)
-    return new or sorted(out_dir.glob("*.m4a"), key=lambda f: f.stat().st_mtime, reverse=True)
+    if not new:
+        raise RuntimeError("下载完成但未生成新的音频文件")
+    return new
 
 
 def download_playlist(
