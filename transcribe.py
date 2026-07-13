@@ -1,7 +1,19 @@
 """语音转文字（faster-whisper）"""
 
 import json
+import os
+import sys
 from pathlib import Path
+
+# Windows: 添加 NVIDIA CUDA DLL 路径
+if sys.platform == "win32":
+    for p in sys.path:
+        nvidia_bin = os.path.join(p, "nvidia", "cublas", "bin")
+        if os.path.isdir(nvidia_bin):
+            os.add_dll_directory(nvidia_bin)
+        nvidia_bin2 = os.path.join(p, "nvidia", "cudnn", "bin")
+        if os.path.isdir(nvidia_bin2):
+            os.add_dll_directory(nvidia_bin2)
 
 from faster_whisper import WhisperModel
 
@@ -20,16 +32,15 @@ def transcribe(
     """转录音频文件，返回 {text, segments, output_path}。"""
     if device == "auto":
         try:
-            import torch
-            if torch.cuda.is_available():
-                torch.zeros(1).cuda()  # 验证 CUDA 实际可用
-                model = WhisperModel(model_size, device="cuda", compute_type="int8")
+            from ctranslate2 import get_cuda_device_count
+            if get_cuda_device_count() > 0:
+                model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
             else:
                 model = WhisperModel(model_size, device="cpu", compute_type="int8")
         except Exception:
             model = WhisperModel(model_size, device="cpu", compute_type="int8")
     else:
-        compute = "int8" if device == "cuda" else "auto"
+        compute = "int8_float16" if device == "cuda" else "auto"
         model = WhisperModel(model_size, device=device, compute_type=compute)
     audio = str(audio_path)
 
