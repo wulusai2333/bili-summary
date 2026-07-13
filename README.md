@@ -158,6 +158,50 @@ python transcribe.py audio.m4a
 python summarize.py transcript.txt
 ```
 
+## 常见问题
+
+### 启动报 `ImportError: DLL load failed` (av 库)
+
+`av` 库 DLL 被旧进程占用或损坏。
+
+```powershell
+# 关闭所有 Python 进程
+taskkill /F /IM python.exe
+
+# 清理并重装
+pip uninstall av -y
+pip install av --no-cache-dir
+```
+
+### 启动报 `ffprobe and ffmpeg not found`
+
+ffmpeg 未安装或未加入 PATH。
+
+```powershell
+winget install ffmpeg
+# 安装后重启终端，或手动刷新 PATH：
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+```
+
+### 转录时 HuggingFace 模型下载超时
+
+`.env` 中已配置国内镜像，确认包含以下两行：
+
+```
+HF_ENDPOINT=https://hf-mirror.com
+HF_HUB_DISABLE_XET=1
+```
+
+### CUDA GPU 报错 `cublas64_12.dll not found`
+
+CUDA 运行时缺失，会自动回退 CPU。如需 GPU 加速：
+
+```powershell
+pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
+# 然后将 DLL 复制到 ctranslate2 目录
+# 参考: python env_check.py 检查当前状态
+```
+
 ## License
 
 MIT
