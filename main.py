@@ -96,9 +96,9 @@ def main():
     else:
         proxy = args.proxy or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
         if args.playlist or args.end:
-            audio_files = download_playlist(url, str(out_dir), args.start, args.end, proxy)
+            audio_files = download_playlist(url, str(audio_dir), args.start, args.end, proxy)
         else:
-            audio_files = download(url, str(out_dir), proxy)
+            audio_files = download(url, str(audio_dir), proxy)
 
     if not audio_files:
         print("错误: 没有下载到任何音频文件")
@@ -112,7 +112,7 @@ def main():
     else:
         txt_files = []
         for audio in audio_files:
-            result = transcribe(str(audio), args.model, device="auto", output_dir=out_dir)
+            result = transcribe(str(audio), args.model, device="auto")
             txt_files.append(Path(result["output_path"]))
 
     if not txt_files:
