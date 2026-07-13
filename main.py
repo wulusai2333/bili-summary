@@ -125,7 +125,7 @@ def main():
             print(f"[跳过总结] {f}")
     else:
         for f in txt_files:
-            summarize_file(str(f), api_key, args.base_url, args.llm_model, args.prompt, args.preset, out_dir)
+            summarize_file(str(f), api_key, args.base_url, args.llm_model, args.prompt, args.preset)
 
     print(f"\n完成! 文件在: {out_dir.resolve()}")
 
