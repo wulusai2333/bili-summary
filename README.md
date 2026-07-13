@@ -37,21 +37,39 @@ python web_server.py         # Web UI → http://localhost:8765
 
 ## Web UI
 
+浏览器界面，支持 B站链接 / 本地上传 / 已有音频三种输入方式。
+
+### 启动
+
 ```powershell
-python web_server.py
-# 或
-uvicorn web_server:app --host 0.0.0.0 --port 8765
+cd bili-summary
+python -m uvicorn web_server:app --host 0.0.0.0 --port 8765
 ```
 
-浏览器打开 `http://localhost:8765`，支持：
+浏览器打开 `http://localhost:8765`。
 
-| 输入方式 | 说明 |
-|----------|------|
-| 🔗 B站链接 | BV 号或完整 URL |
-| 📁 本地上传 | mp4 / m4a / mp3 / wav |
-| 📂 已有音频 | 处理 output/audio/ 已下载文件 |
+> 首次运行需安装额外依赖：`pip install fastapi uvicorn python-multipart`
 
-进度实时显示，结果可直接下载。
+### 环境要求
+
+- Python 3.10+
+- ffmpeg（音频提取必需）
+- DeepSeek API Key（[获取地址](https://platform.deepseek.com)）
+
+### ffmpeg 安装
+
+```powershell
+# Windows
+winget install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Linux (Debian/Ubuntu)
+sudo apt install ffmpeg
+```
+
+> 安装后需重启终端，或手动将 ffmpeg 所在目录加入 PATH。
 
 ## CLI 用法
 
@@ -126,12 +144,6 @@ output/
 | `brief` | 简短摘要 | 快速浏览 |
 | `timeline` | 时间线梳理 | 讲座/访谈 |
 | `action` | 行动指南 | 实操教程 |
-
-## 环境要求
-
-- Python 3.10+
-- Windows / macOS / Linux
-- DeepSeek API Key（[获取地址](https://platform.deepseek.com)）
 
 ## 单独使用各模块
 
