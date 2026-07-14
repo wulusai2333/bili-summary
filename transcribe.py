@@ -5,7 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-# Windows: 添加 NVIDIA CUDA DLL 路径
 if sys.platform == "win32":
     for p in sys.path:
         nvidia_bin = os.path.join(p, "nvidia", "cublas", "bin")

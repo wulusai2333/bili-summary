@@ -22,8 +22,8 @@ python {baseDir}/env_check.py
 ```
 
 如果缺少依赖，按提示安装：
-- `pip install yt-dlp faster-whisper openai tomllib`
-- `winget install ffmpeg` (Windows) 或 ` brew install ffmpeg` (macOS)
+- `pip install yt-dlp faster-whisper openai`
+- `sudo apt install ffmpeg`
 
 ## 工作流
 
@@ -94,9 +94,9 @@ done
 
 | 错误 | 原因 | 解决 |
 |------|------|------|
-| `cublas64_12.dll not found` | CUDA 运行时缺失 | 自动回退 CPU；想用 GPU 则 `pip install nvidia-cublas-cu12` |
+| `cublas64_12.dll not found` | CUDA 运行时缺失 | 自动回退 CPU；如需 GPU 在 WSL 中装 nvidia-cublas-cu12 |
 | `HF ConnectTimeout` | HuggingFace 被墙 | 已自动用 `hf-mirror.com` 镜像 |
-| `ffmpeg not found` | 未安装 | `winget install ffmpeg` |
+| `ffmpeg not found` | 未安装 | `sudo apt install ffmpeg` |
 | `DEEPSEEK_API_KEY` 未设置 | 缺少 Key | `.env` 文件已配置 |
 
 ## 预设文件

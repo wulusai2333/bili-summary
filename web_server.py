@@ -10,16 +10,6 @@ import time
 import uuid
 from pathlib import Path
 
-# 确保 ffmpeg 在 PATH 中
-_FFMPEG_DIRS = [
-    r"C:\Users\Administrator\AppData\Local\Microsoft\WinGet\Links",
-    r"C:\Users\Administrator\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.2-full_build\bin",
-]
-for _d in _FFMPEG_DIRS:
-    if _d not in os.environ.get("PATH", ""):
-        os.environ["PATH"] = _d + os.pathsep + os.environ.get("PATH", "")
-        os.add_dll_directory(_d)
-
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles

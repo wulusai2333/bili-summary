@@ -18,19 +18,52 @@ B站视频 → 下载音频 → 语音转文字 → DeepSeek 总结
 
 ## 快速开始
 
-```powershell
-# 1. 安装依赖
+### WSL / Linux
+
+```bash
+# 1. 安装系统依赖
+sudo apt install ffmpeg
+
+# 2. 创建虚拟环境并安装 Python 依赖
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. 编辑 .env 设置 DeepSeek API Key
+# 3. (WSL GPU 加速) 安装 CUDA 计算库
+pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
+
+# 4. 编辑 .env 设置 DeepSeek API Key
 # DEEPSEEK_API_KEY=sk-xxx
 
-# 3. 环境检查
+# 5. 环境检查
+.venv/bin/python env_check.py
+
+# 6. 运行（推荐使用启动脚本）
+bash run.sh BV号            # 命令行
+bash run.sh --preset notes --no-summary
+
+# 或直接启动 Web UI
+pip install fastapi uvicorn python-multipart
+.venv/bin/python web_server.py
+```
+
+### Windows
+
+```powershell
+# 1. 安装系统依赖
+winget install ffmpeg
+
+# 2. 安装 Python 依赖
+pip install -r requirements.txt
+
+# 3. 编辑 .env 设置 DeepSeek API Key
+
+# 4. 环境检查
 python env_check.py
 
-# 4. 运行（二选一）
-python main.py BV号         # 命令行
-python web_server.py         # Web UI → http://localhost:8765
+# 5. 运行（推荐使用启动脚本）
+run.bat BV号
+# 或: python main.py BV号
 ```
 
 首次运行会自动下载 Whisper 模型（约 3GB），后续缓存复用。
@@ -41,8 +74,7 @@ python web_server.py         # Web UI → http://localhost:8765
 
 ### 启动
 
-```powershell
-cd bili-summary
+```bash
 python -m uvicorn web_server:app --host 0.0.0.0 --port 8765
 ```
 
@@ -58,22 +90,20 @@ python -m uvicorn web_server:app --host 0.0.0.0 --port 8765
 
 ### ffmpeg 安装
 
-```powershell
-# Windows
-winget install ffmpeg
+```bash
+# Debian/Ubuntu (含 WSL)
+sudo apt install ffmpeg
 
 # macOS
 brew install ffmpeg
 
-# Linux (Debian/Ubuntu)
-sudo apt install ffmpeg
+# Windows (非 WSL)
+winget install ffmpeg
 ```
-
-> 安装后需重启终端，或手动将 ffmpeg 所在目录加入 PATH。
 
 ## CLI 用法
 
-```powershell
+```bash
 # 单个视频
 python main.py BV1xxx
 
@@ -147,7 +177,7 @@ output/
 
 ## 单独使用各模块
 
-```powershell
+```bash
 # 只下载音频
 python download.py BV1xxx
 
@@ -160,27 +190,16 @@ python summarize.py transcript.txt
 
 ## 常见问题
 
-### 启动报 `ImportError: DLL load failed` (av 库)
-
-`av` 库 DLL 被旧进程占用或损坏。
-
-```powershell
-# 关闭本项目的服务进程
-Get-NetTCPConnection -LocalPort 8765 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
-
-# 清理并重装 av
-pip uninstall av -y
-pip install av --no-cache-dir
-```
-
 ### 启动报 `ffprobe and ffmpeg not found`
 
 ffmpeg 未安装或未加入 PATH。
 
-```powershell
+```bash
+# WSL / Linux
+sudo apt install ffmpeg
+
+# Windows
 winget install ffmpeg
-# 安装后重启终端，或手动刷新 PATH：
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 ```
 
 ### 转录时 HuggingFace 模型下载超时
@@ -192,15 +211,43 @@ HF_ENDPOINT=https://hf-mirror.com
 HF_HUB_DISABLE_XET=1
 ```
 
-### CUDA GPU 报错 `cublas64_12.dll not found`
+> `HF_HUB_DISABLE_XET=1` 必须设置，否则 HuggingFace 的 XetHub CAS 存储认证会失败。
 
-CUDA 运行时缺失，会自动回退 CPU。如需 GPU 加速：
+### 转录时 `LocalEntryNotFoundError: ConnectError`
 
-```powershell
+模型下载失败。两个可能原因：
+
+1. **直连 huggingface.co 被墙** → `.env` 中必须配置 `HF_ENDPOINT=https://hf-mirror.com`
+2. **XetHub CAS 认证失败 (401 Unauthorized)** → `.env` 中必须配置 `HF_HUB_DISABLE_XET=1`
+
+使用 `run.sh` / `run.bat` 启动会自动设置这两个环境变量。
+
+### WSL GPU 报错 `libcublas.so.12 is not found`
+
+CUDA GPU 被检测到但计算库缺失。WSL 中需要单独安装：
+
+```bash
+# 安装 CUDA 计算库
 pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
-# 然后将 DLL 复制到 ctranslate2 目录
-# 参考: python env_check.py 检查当前状态
 ```
+
+安装后使用 `run.sh` 启动（已配置 `LD_LIBRARY_PATH`），或手动设置：
+
+```bash
+export LD_LIBRARY_PATH=.venv/lib/python3.12/site-packages/nvidia/cublas/lib:.venv/lib/python3.12/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH
+```
+
+### WSL GPU 报错 `RuntimeError: Library libcublas.so.12 is not found`
+
+`env_check.py` 显示 CUDA 可用，但转录时报错。原因同上 — pip 装的 `nvidia-cublas-cu12` 库文件不在 `LD_LIBRARY_PATH` 中。使用 `bash run.sh` 启动即可自动处理。
+
+### 用 python 直接运行 vs 启动脚本的区别
+
+| 方式 | `HF_ENDPOINT` | `HF_HUB_DISABLE_XET` | WSL `LD_LIBRARY_PATH` |
+|------|:---:|:---:|:---:|
+| `run.bat` (Windows) | 自动设置 | 自动设置 | 不需要 |
+| `run.sh` (WSL) | 自动设置 | 自动设置 | 自动设置 |
+| `python main.py` | 从 `.env` 读取 | 从 `.env` 读取 | 需手动设置 |
 
 ## License
 
