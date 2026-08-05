@@ -16,6 +16,6 @@ if "%~1"=="" goto :eof
 if "%~1"=="-m" set MODEL=%~2
 if "%~1"=="--model" set MODEL=%~2
 set "T=%~1"
-if "%T:~0,9%"=="--model=" set MODEL=%T:~9%
+if "%T:~0,8%"=="--model=" set MODEL=%T:~8%
 shift
 goto :parse_model
