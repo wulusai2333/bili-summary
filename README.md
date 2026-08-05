@@ -38,13 +38,14 @@ pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
 # 5. 环境检查
 .venv/bin/python env_check.py
 
-# 6. 运行（推荐使用启动脚本）
+# 6. 运行（推荐使用启动脚本，会自动检测/下载模型）
 bash run.sh BV号            # 命令行
 bash run.sh --preset notes --no-summary
 
-# 或直接启动 Web UI
+# 或启动 Web UI（需先安装 Web 依赖，见下方 Web UI 一节）
 pip install fastapi uvicorn python-multipart
-.venv/bin/python web_server.py
+bash run_web.sh             # 浏览器打开 http://localhost:8765
+bash stop_web.sh            # 关闭 Web 服务
 ```
 
 ### Windows
@@ -66,7 +67,8 @@ run.bat BV号
 # 或: python main.py BV号
 ```
 
-首次运行会自动下载 Whisper 模型（约 3GB），后续缓存复用。
+首次运行会自动下载 Whisper 模型（约 3GB），后续缓存复用。启动脚本
+（`run.sh` / `run.bat` / `run_web.sh`）每次启动都会先检测模型缓存，缺失时才下载。
 
 ## Web UI
 
@@ -74,17 +76,25 @@ run.bat BV号
 
 ### 启动
 
+WSL / Linux 推荐使用启停脚本（自动检测模型、设置 GPU 库路径）：
+
+```bash
+bash run_web.sh       # 启动，浏览器打开 http://localhost:8765
+bash stop_web.sh      # 关闭（只结束 8765 端口的服务）
+```
+
+或直接运行（Windows 用此方式）：
+
 ```bash
 python -m uvicorn web_server:app --host 0.0.0.0 --port 8765
 ```
 
-浏览器打开 `http://localhost:8765`。
-
 > 首次运行需安装额外依赖：`pip install fastapi uvicorn python-multipart`
+> 端口可用环境变量 `PORT` 覆盖，如 `PORT=9000 bash run_web.sh`
 
 ### 环境要求
 
-- Python 3.10+
+- Python 3.11+
 - ffmpeg（音频提取必需）
 - DeepSeek API Key（[获取地址](https://platform.deepseek.com)）
 
@@ -204,23 +214,33 @@ winget install ffmpeg
 
 ### 转录时 HuggingFace 模型下载超时
 
-`.env` 中已配置国内镜像，确认包含以下两行：
+旧版文档建议在 `.env` 中配置镜像：
 
 ```
 HF_ENDPOINT=https://hf-mirror.com
 HF_HUB_DISABLE_XET=1
 ```
 
-> `HF_HUB_DISABLE_XET=1` 必须设置，否则 HuggingFace 的 XetHub CAS 存储认证会失败。
+这两个变量与当前 huggingface_hub 版本（1.26+）**不兼容**，会导致下载失败：
+Xet 存储的模型必须走 XetHub 通道，`HF_HUB_DISABLE_XET=1` 会强制走已失效的旧下载
+路径；hf-mirror.com 的绝对地址重定向也无法被当前版本正确跟随。请**删除这两行**，
+脚本已不再设置它们。
+
+国内网络直连超时时，设置代理而不是镜像：
+
+```bash
+export HTTP_PROXY=http://127.0.0.1:7890    # 换成你的代理地址
+export HTTPS_PROXY=http://127.0.0.1:7890
+```
 
 ### 转录时 `LocalEntryNotFoundError: ConnectError`
 
-模型下载失败。两个可能原因：
+模型下载失败。常见原因：
 
-1. **直连 huggingface.co 被墙** → `.env` 中必须配置 `HF_ENDPOINT=https://hf-mirror.com`
-2. **XetHub CAS 认证失败 (401 Unauthorized)** → `.env` 中必须配置 `HF_HUB_DISABLE_XET=1`
-
-使用 `run.sh` / `run.bat` 启动会自动设置这两个环境变量。
+1. **旧配置残留** → 确认 `.env` 中没有 `HF_ENDPOINT` / `HF_HUB_DISABLE_XET`
+   （这两个变量与当前 huggingface_hub 版本不兼容，见上一条）
+2. **网络无法直连 huggingface.co** → 设置 `HTTP_PROXY` / `HTTPS_PROXY` 代理
+3. **缓存损坏** → 删除 `.hf_cache/hub/models--Systran--faster-whisper-*` 后重试
 
 ### WSL GPU 报错 `libcublas.so.12 is not found`
 
@@ -243,11 +263,11 @@ export LD_LIBRARY_PATH=.venv/lib/python3.12/site-packages/nvidia/cublas/lib:.ven
 
 ### 用 python 直接运行 vs 启动脚本的区别
 
-| 方式 | `HF_ENDPOINT` | `HF_HUB_DISABLE_XET` | WSL `LD_LIBRARY_PATH` |
-|------|:---:|:---:|:---:|
-| `run.bat` (Windows) | 自动设置 | 自动设置 | 不需要 |
-| `run.sh` (WSL) | 自动设置 | 自动设置 | 自动设置 |
-| `python main.py` | 从 `.env` 读取 | 从 `.env` 读取 | 需手动设置 |
+| 方式 | 模型预检 | WSL `LD_LIBRARY_PATH` |
+|------|:---:|:---:|
+| `run.bat` (Windows) | 自动检测/下载 | 不需要 |
+| `run.sh` (WSL) | 自动检测/下载 | 自动设置 |
+| `python main.py` | 无（转录时才下载） | 需手动设置 |
 
 ## License
 

@@ -55,12 +55,12 @@ Output structure: `output/audio/`, `output/transcript/`, `output/summary/`
 
 ## Key gotchas
 
-- **`run.sh` / `run.bat`** — use the launcher scripts. WSL uses `.venv/bin/python`, Windows uses system `python`. Both scripts set `HF_ENDPOINT` mirror env vars.
+- **`run.sh` / `run.bat`** — use the launcher scripts. WSL uses `.venv/bin/python`, Windows uses system `python`. Both scripts pre-check the Whisper model cache via `ensure_model.py` (auto-download if missing) and accept `-m/--model`.
 - **`.venv/` at project root** — on WSL this is a Linux venv inside the shared `D:` drive. Windows ignores it (use system Python on Windows). Already in `.gitignore`.
 - **ffmpeg must be in `PATH`** — WSL: `sudo apt install ffmpeg`. Windows: `winget install ffmpeg`.
 - **`.env` loaded at import time** — each module calls `_load_env()` at module level before anything imports it. This means env vars are set by the time `main()` runs, but only if the module is imported (not if you run `summarize.py` directly without the env).
-- **`tomllib` requires Python 3.11+** — README says 3.10+ but `summarize.py` uses `tomllib` which was added in 3.11.
-- **Whisper model auto-downloads ~3GB on first run** — cached to the HuggingFace hub cache. Set `HF_ENDPOINT=https://hf-mirror.com` in `.env` to avoid timeouts in mainland China.
+- **`tomllib` requires Python 3.11+** — `summarize.py` uses `tomllib` which was added in 3.11.
+- **Whisper model auto-downloads ~3GB on first run** — cached under `HF_HOME` (default `.hf_cache`). Do NOT set `HF_ENDPOINT` / `HF_HUB_DISABLE_XET` — both are incompatible with huggingface_hub ≥1.26 (Xet downloads fail). If direct download times out, set `HTTP_PROXY` / `HTTPS_PROXY` instead.
 - **WSL GPU requires extra pip packages** — `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12` (Linux/WSL only). `run.sh` sets `LD_LIBRARY_PATH` so ctranslate2 can find `libcublas.so.12`. Without these, GPU detection succeeds but actual encoding fails with `RuntimeError: Library libcublas.so.12 is not found`.
 - **No test suite exists** — verify changes by running `python env_check.py` and a quick `python download.py BV1xxx` on a known-good BV号.
 

@@ -29,14 +29,12 @@ _load_env()
 
 
 CHECKS = {
-    "Python": (">=3.10", lambda: f"{sys.version_info.major}.{sys.version_info.minor}"),
+    "Python": (">=3.11", lambda: f"{sys.version_info.major}.{sys.version_info.minor}"),
     "ffmpeg": ("必需", lambda: shutil.which("ffmpeg") or "未安装"),
     "yt-dlp": ("必需", lambda: "已安装" if importlib.util.find_spec("yt_dlp") else "未安装"),
     "faster-whisper": ("必需", lambda: "已安装" if importlib.util.find_spec("faster_whisper") else "未安装"),
     "openai": ("必需", lambda: "已安装" if importlib.util.find_spec("openai") else "未安装"),
     "DEEPSEEK_API_KEY": ("必需", lambda: "已设置" if os.getenv("DEEPSEEK_API_KEY") else "未设置"),
-    "HF_ENDPOINT": ("推荐", lambda: os.getenv("HF_ENDPOINT", "未设置(将直连HF)")),
-    "HF_HUB_DISABLE_XET": ("推荐", lambda: "已设置" if os.getenv("HF_HUB_DISABLE_XET") else "未设置(可能认证失败)"),
 }
 
 

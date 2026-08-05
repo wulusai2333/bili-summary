@@ -8,7 +8,7 @@ Flat Python script repo (no packages, no tests, no CI, no build system). Pipelin
 
 ## Commands
 
-Prefer the launcher scripts in normal operation — they activate the venv and set the HuggingFace mirror env vars:
+Prefer the launcher scripts in normal operation — they activate the venv, pre-check the Whisper model cache (`ensure_model.py`, auto-downloads if missing), and set the GPU library paths:
 
 ```bash
 bash run.sh BV1xxx                        # WSL/Linux CLI (uses .venv/bin/python)
@@ -31,7 +31,9 @@ Web UI:
 
 ```bash
 pip install fastapi uvicorn python-multipart   # one-time; NOT in requirements.txt
-python -m uvicorn web_server:app --host 0.0.0.0 --port 8765   # or: python web_server.py
+bash run_web.sh      # start (pre-checks model; PORT env overrides default 8765)
+bash stop_web.sh     # stop (kills only the port-8765 listener)
+python -m uvicorn web_server:app --host 0.0.0.0 --port 8765   # or run web_server.py directly
 ```
 
 There is no test suite. Verify changes with `python env_check.py` plus a quick end-to-end run on a known-good BV号.
@@ -46,7 +48,7 @@ transcribe.py    faster-whisper with auto GPU/CPU detection
 summarize.py     DeepSeek via OpenAI SDK; presets from summary_presets.toml
 env_check.py     dependency/CUDA checker
 index.html       single-file SPA served by web_server (no framework)
-run.sh / run.bat launchers — set HF_ENDPOINT, HF_HUB_DISABLE_XET=1, HF_HOME=.hf_cache
+run.sh / run.bat / run_web.sh launchers — set HF_HOME=.hf_cache and WSL GPU LD_LIBRARY_PATH; ensure_model.py pre-checks model cache; stop_web.sh stops the web server
 ```
 
 Output layout (created on demand): `output/audio/` (`.m4a`), `output/transcript/` (`.txt` + `_transcript.json` with timed segments), `output/summary/` (`{stem}_summary.md`).
@@ -62,10 +64,10 @@ Output layout (created on demand): `output/audio/` (`.m4a`), `output/transcript/
 
 ## Key gotchas
 
-- **Use `run.sh` / `run.bat`, not bare `python main.py`** — they set `HF_ENDPOINT=https://hf-mirror.com`, `HF_HUB_DISABLE_XET=1` (both needed to download Whisper models in mainland China; missing `HF_HUB_DISABLE_XET` causes a XetHub 401 on model fetch), `HF_HOME=.hf_cache` (local model cache), and `LD_LIBRARY_PATH` for WSL GPU.
+- **Use `run.sh` / `run.bat`, not bare `python main.py`** — they set `HF_HOME=.hf_cache` (local model cache), `LD_LIBRARY_PATH` for WSL GPU, and pre-check the model cache via `ensure_model.py`. Do NOT add `HF_ENDPOINT=hf-mirror.com` / `HF_HUB_DISABLE_XET=1` back: both are incompatible with huggingface_hub ≥1.26 (Xet-storage models fail with `LocalEntryNotFoundError`; mirror absolute redirects aren't followed). If model downloads time out in mainland China, set `HTTP(S)_PROXY` instead.
 - **Dual platform**: the `.venv/` at project root is a Linux venv inside shared storage (WSL). Windows ignores it and uses system Python. Don't assume a single interpreter.
 - **ffmpeg must be in PATH** for audio extraction. WSL: `sudo apt install ffmpeg`; Windows: `winget install ffmpeg`.
-- **Python 3.11+ is actually required** — `summarize.py` uses `tomllib` (3.11+), although README/env_check claim 3.10+.
+- **Python 3.11+ is required** — `summarize.py` uses `tomllib` (3.11+).
 - **WSL GPU**: `env_check.py` can report CUDA available while transcription fails with `RuntimeError: Library libcublas.so.12 is not found` unless `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12` was run and `LD_LIBRARY_PATH` is set (run.sh does this). Windows counterpart: `cublas64_12.dll not found`.
 - **Whisper model auto-downloads ~3GB** on first transcription (cached under `HF_HOME`).
 - **requirements.txt is minimal** (`yt-dlp`, `faster-whisper`, `openai`). Web deps (fastapi, uvicorn, python-multipart) and WSL GPU wheels (nvidia-cublas-cu12, nvidia-cudnn-cu12) are documented in README but not pinned there.

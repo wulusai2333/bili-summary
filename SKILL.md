@@ -65,7 +65,6 @@ python {baseDir}/env_check.py
 ### 步骤 5：执行
 
 ```bash
-$env:HF_ENDPOINT="https://hf-mirror.com"; $env:HF_HUB_DISABLE_XET="1"
 python {baseDir}/main.py "URL" [参数...]
 ```
 
@@ -95,7 +94,7 @@ done
 | 错误 | 原因 | 解决 |
 |------|------|------|
 | `cublas64_12.dll not found` | CUDA 运行时缺失 | 自动回退 CPU；如需 GPU 在 WSL 中装 nvidia-cublas-cu12 |
-| `HF ConnectTimeout` | HuggingFace 被墙 | 已自动用 `hf-mirror.com` 镜像 |
+| `HF ConnectTimeout` | HuggingFace 无法直连 | 设置 `HTTP_PROXY` / `HTTPS_PROXY` 代理后重试 |
 | `ffmpeg not found` | 未安装 | `sudo apt install ffmpeg` |
 | `DEEPSEEK_API_KEY` 未设置 | 缺少 Key | `.env` 文件已配置 |
 
